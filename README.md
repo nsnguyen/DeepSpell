@@ -1,5 +1,6 @@
 # DeepSpell
-Deep Learning based Speller
+Deep Learning based Speller.
+Based on Tall Weiss's DeepSpell code https://github.com/MajorTal/DeepSpell.
 
 ## Quick Start
 Clone DeepSpell Git repository:
