@@ -14,6 +14,7 @@ Modified by Pavel Surmenok
 
 '''
 
+import argparse
 import numpy as np
 from keras.layers import Activation, TimeDistributed, Dense, RepeatVector, Dropout
 from keras.layers import recurrent
@@ -45,6 +46,7 @@ INVERTED = True
 MODEL_CHECKPOINT_DIRECTORYNAME = 'models'
 MODEL_CHECKPOINT_FILENAME = 'weights.{epoch:02d}-{val_loss:.2f}.hdf5'
 MODEL_DATASET_PARAMS_FILENAME = 'dataset_params.pickle'
+MODEL_STARTING_CHECKPOINT_FILENAME = 'weights.hdf5'
 CSV_LOG_FILENAME = 'log.csv'
 
 
@@ -104,10 +106,11 @@ def show_samples(model, dataset, epoch, logs, X_dev_batch, y_dev_batch):
 
 
 
-def iterate_training(model, dataset):
+def iterate_training(model, dataset, initial_epoch):
     """Iterative Training"""
 
-    checkpoint = ModelCheckpoint(MODEL_CHECKPOINT_DIRECTORYNAME + '/' + MODEL_CHECKPOINT_FILENAME)
+    checkpoint = ModelCheckpoint(MODEL_CHECKPOINT_DIRECTORYNAME + '/' + MODEL_CHECKPOINT_FILENAME,
+                                 save_best_only=True)
     tensorboard = TensorBoard()
     csv_logger = CSVLogger(CSV_LOG_FILENAME)
 
@@ -124,7 +127,8 @@ def iterate_training(model, dataset):
                         validation_data=validation_batch_generator,
                         nb_val_samples=SAMPLES_PER_EPOCH,
                         callbacks=[checkpoint, tensorboard, csv_logger, show_samples_callback],
-                        verbose=1)
+                        verbose=1,
+                        initial_epoch=initial_epoch)
 
 
 def save_dataset_params(dataset):
@@ -133,17 +137,39 @@ def save_dataset_params(dataset):
         pickle.dump(params, f)
 
 
-def main_news():
+def main_news(checkpoint_filename=None, dataset_params_filename=None, initial_epoch=1):
     """Main"""
     dataset = DataSet(DATASET_FILENAME)
 
     if not os.path.exists(MODEL_CHECKPOINT_DIRECTORYNAME):
         os.makedirs(MODEL_CHECKPOINT_DIRECTORYNAME)
 
-    save_dataset_params(dataset)
+    if dataset_params_filename is not None:
+        with open(dataset_params_filename, 'rb') as f:
+            dataset_params = pickle.load(f)
+
+        assert dataset_params['chars'] == dataset.chars
+        assert dataset_params['y_max_length'] == dataset.y_max_length
+
+    else:
+        save_dataset_params(dataset)
 
     model = generate_model(dataset.y_max_length, dataset.chars)
-    iterate_training(model, dataset)
+
+    if checkpoint_filename is not None:
+        model.load_weights(checkpoint_filename)
+
+    iterate_training(model, dataset, initial_epoch)
 
 if __name__ == '__main__':
-    main_news()
+    parser = argparse.ArgumentParser(description='Trains a deep spelling model.')
+    parser.add_argument('--checkpoint', type=str,
+                        help='Filename of a model checkpoint to start the training from.')
+    parser.add_argument('--datasetparams', type=str,
+                        help='Filename of a file with dataset params to load for continuing model training.')
+    parser.add_argument('--initialepoch', type=int,
+                        help='Initial epoch parameter for continuing model training.', default=0)
+
+    args = parser.parse_args()
+
+    main_news(args.checkpoint, args.datasetparams, args.initialepoch)
