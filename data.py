@@ -46,7 +46,7 @@ class DataSet(object):
 
         chars_answer = set.union(*(set(answer) for answer in answers))
         chars_question = set.union(*(set(question) for question in questions))
-        self.chars = list(set.union(chars_answer, chars_question))
+        self.chars = sorted(list(set.union(chars_answer, chars_question)))
         self.character_table = CharacterTable(self.chars)
 
         split_at = int(len(questions) * (1 - test_set_fraction))
@@ -158,7 +158,7 @@ class DataSet(object):
             counter += Counter(line)
 
         most_popular_chars = {key for key, _value in counter.most_common(NUMBER_OF_CHARS)}
-        print([char.encode('utf-8') for char in most_popular_chars])
+        print(most_popular_chars)
 
         lines = [line for line in lines if line and not bool(set(line) - most_popular_chars)]
         print("Left with {} lines of input corpus".format(len(lines)))
