@@ -1,4 +1,4 @@
-FROM gcr.io/tensorflow/tensorflow:1.0.0-py3
+FROM tensorflow/tensorflow:latest-py3
 
 ARG deepspell_dir=/opt/deepspell
 ARG deepspell_user=deepspell
@@ -6,7 +6,7 @@ ARG deepspell_uid=1000
 
 RUN mkdir -p ${deepspell_dir}
 
-RUN apt-get update && apt-get install -y git
+RUN apt-get update && apt-get install -y git locales
 
 ARG KERAS_VERSION=1.2.2
 ENV KERAS_BACKEND=tensorflow
